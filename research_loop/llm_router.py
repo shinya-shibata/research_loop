@@ -19,15 +19,31 @@ def _call_gemini(model: str, prompt: str) -> str:
 
 
 def _call_openrouter(model: str, prompt: str) -> str:
-    resp = requests.post(
-        "https://openrouter.ai/api/v1/chat/completions",
-        headers={"Authorization": f"Bearer {os.environ.get('OPENROUTER_API_KEY')}"},
-        json={"model": model, "messages": [{"role": "user", "content": prompt}]},
-        timeout=300,
-    )
-    if resp.status_code != 200:
-        raise RuntimeError(f"OpenRouterエラー ({resp.status_code}): {resp.text}")
-    return resp.json()["choices"][0]["message"]["content"]
+    try:
+        resp = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers={"Authorization": f"Bearer {os.environ.get('OPENROUTER_API_KEY')}"},
+            json={"model": model, "messages": [{"role": "user", "content": prompt}]},
+            timeout=300,
+        )
+        if resp.status_code != 200:
+            raise RuntimeError(f"OpenRouterエラー ({resp.status_code}): {resp.text}")
+        return resp.json()["choices"][0]["message"]["content"]
+    except Exception as e:
+        if model == "google/gemma-4-31b-it:free":
+            fallback_model = "nvidia/nemotron-3-ultra-550b-a55b:free"
+            print(f"Warning: {model} の呼び出しに失敗しました。{fallback_model} でリトライします。エラー原因: {e}")
+            resp = requests.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                headers={"Authorization": f"Bearer {os.environ.get('OPENROUTER_API_KEY')}"},
+                json={"model": fallback_model, "messages": [{"role": "user", "content": prompt}]},
+                timeout=300,
+            )
+            if resp.status_code != 200:
+                raise RuntimeError(f"OpenRouterエラー (フォールバック先も失敗) ({resp.status_code}): {resp.text}")
+            return resp.json()["choices"][0]["message"]["content"]
+        else:
+            raise e
 
 
 PROVIDERS = {

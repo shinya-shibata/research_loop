@@ -1,19 +1,14 @@
 # test_openrouter.py
 import os
-import requests
 from dotenv import load_dotenv
 load_dotenv()
 
+from llm_router import _call_openrouter
+
 model = "google/gemma-4-31b-it:free"
-print(f"Testing model: {model} with 60s timeout...")
+print(f"Testing _call_openrouter with model: {model}")
 try:
-    resp = requests.post(
-        "https://openrouter.ai/api/v1/chat/completions",
-        headers={"Authorization": f"Bearer {os.environ.get('OPENROUTER_API_KEY')}"},
-        json={"model": model, "messages": [{"role": "user", "content": "1+1は？"}]},
-        timeout=60,
-    )
-    print(f"Status: {resp.status_code}")
-    print(f"Response: {resp.text}")
+    result = _call_openrouter(model, "1+1は？")
+    print(f"Success! Result: {result}")
 except Exception as e:
-    print(f"Error: {e}")
+    print(f"Failed with exception: {e}")
