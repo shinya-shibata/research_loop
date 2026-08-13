@@ -51,7 +51,10 @@ project:
   topic: "補助統計量の存在条件についての検証"    # 研究課題テキスト
 
 2. コマンド1: 研究ループの起動
+
 ターミナル（コマンドプロンプト）を開き、フォルダーに移動して graph.py を実行します。
+
+pip install langgraph-checkpoint-sqlite
 
 cd C:\Users\user\.gemini\antigravity\scratch\research_loop
 python graph.py
