@@ -1,0 +1,102 @@
+# 環境設定ガイド (Hugging Face / Slack)
+
+## 1. HF_SPACE_URL の設定（必須）
+ローカルPCに負担をかけず、無料クラウド（Hugging Face Spaces）上で AI モデル（DeepSeek-R1 や Qwen2.5 等）を稼働させるための設定です。
+
+> **Note:** クレジットカードの登録は不要です（完全無料）。
+
+### 手順
+
+1. **Hugging Face アカウントの作成**  
+   [Hugging Face](https://huggingface.co/) にアクセスし、右上の **「Sign Up」** からアカウントを作成します（メール認証を完了させてください）。
+
+2. **新規 Space の作成**  
+   - ログイン後、右上のユーザーアイコンをクリックし、**「New Space」** を選択します。
+   - 以下の項目を設定します：
+     - **Space name**: 任意のお好きな名前（例: `my-research-ollama`）
+     - **Select the Space SDK**: `Docker` を選択し、直下に表示される `Blank` を選択
+     - **Space hardware**: デフォルトの `CPU basic · Free` を選択
+     - **Space visibility**: `Private` を選択（セキュリティのため非公開を推奨）
+   - 最下部の **「Create Space」** をクリックします。
+
+3. **Dockerfile の作成**  
+   - 作成された Space 画面で **「Create a new file」**（または **「Add file」** → **「Create a new file」**）をクリックします。
+   - **File name** に `Dockerfile` と入力します。
+   - ファイル本文エリアに以下のコードを貼り付けます：
+
+   ```dockerfile
+   FROM ollama/ollama:latest
+   ENV OLLAMA_HOST=0.0.0.0:7860
+   EXPOSE 7860
+
+   # ビルド時にモデルをあらかじめダウンロード
+   RUN (ollama serve &) && sleep 5 && \
+       ollama pull deepseek-r1:14b && \
+       ollama pull qwen2.5:14b-instruct-q4_K_M
+
+   CMD ["sh", "-c", "ollama serve"]
+
+
+ページ下部の 「Commit changes to main」 をクリックして保存します。
+
+ビルドの完了を確認
+
+保存後、自動的に Docker ビルドが始まります。
+
+画面上部のステータスが Building から数分〜10分程度で Running（緑色）に変われば起動完了です。
+
+URL の取得と .env への設定
+
+Space 画面右上の 「⋮」 (Three Dots メニュー) をクリックし、「Embed this Space」 を選択します。
+
+表示されたポップアップ内の Direct URL（例: https://YOUR_USERNAME-my-research-ollama.hf.space）をコピーします。
+
+(※ https://<ユーザー名>-<Space名>.hf.space の形式になります)
+
+プロジェクト直下の .env ファイルを開き、HF_SPACE_URL に貼り付けます：
+
+
+HF_SPACE_URL=https://YOUR_USERNAME-YOUR_SPACE_NAME.hf.space
+
+
+2. SLACK_WEBHOOK_URL の設定（任意）
+研究ループが一時停止（Pause）した際に、Slack へ「一時停止しました。レビューしてください」等の自動通知を送信するための設定です。
+
+Note: Slack 通知が不要な場合（ターミナル表示やファイル生成の確認のみで良い場合）は本手順をスキップ可能です。.env の SLACK_WEBHOOK_URL= は空欄のままで動作します。
+
+手順
+Slack App 作成ページへアクセス
+
+ブラウザで Slack API: Applications にアクセスします。
+
+アプリの作成
+
+「Create New App」 ボタンをクリックし、「From scratch」 を選択します。
+
+App Name: 任意の名前（例: Research-Bot）
+
+Development Slack Workspace: 通知を受け取りたいワークスペースを選択
+
+「Create App」 をクリックします。
+
+Incoming Webhooks の有効化
+
+左側サイドメニューの 「Incoming Webhooks」 をクリックします。
+
+画面右上のトグルスイッチ（Off）をクリックして On に切り替えます。
+
+Webhook URL の発行
+
+ページ最下部の 「Add New Webhook to Workspace」 ボタンをクリックします。
+
+通知を送信したい Slack チャンネル（例: #general や #研究ログ）を選択し、「許可」 をクリックします。
+
+URL の取得と .env への設定
+
+発行された Webhook URL の横にある 「Copy」 ボタンをクリックします。
+
+プロジェクト直下の .env ファイルを開き、SLACK_WEBHOOK_URL に貼り付けます：
+
+
+SLACK_WEBHOOK_URL=[https://hooks.slack.com/services/YOUR/WEBHOOK/URL_HERE](https://hooks.slack.com/services/YOUR/WEBHOOK/URL_HERE)
+
