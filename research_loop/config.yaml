@@ -1,0 +1,24 @@
+project:
+  id: "ancillary_stat_project"
+  topic: "補助統計量の存在条件についての検証"
+
+roles:
+  hypothesis:
+    provider: gemini
+    model: gemini-2.5-pro
+
+  critique_a:
+    provider: hf_ollama
+    model: deepseek-r1:14b
+
+  critique_b:
+    provider: openrouter
+    model: openai/gpt-oss-120b:free
+
+  third_opinion:
+    provider: openrouter
+    model: meta-llama/llama-3.3-70b-instruct:free
+
+settings:
+  rounds_before_pause: 5
+
