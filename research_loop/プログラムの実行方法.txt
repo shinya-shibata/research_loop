@@ -56,7 +56,7 @@ project:
 
 pip install langgraph-checkpoint-sqlite
 
-cd C:\Users\user\.gemini\antigravity\scratch\research_loop
+cd C:\Users\user\.gemini\antigravity\scratch\research_loop　#ターミナル（コマンドプロンプト）にフォルダーの場所を教える　
 python graph.py
 
 🤖 裏で自動実行されていること：
