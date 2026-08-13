@@ -1,4 +1,5 @@
 import os
+import time
 import yaml
 import requests
 import google.generativeai as genai
@@ -28,25 +29,16 @@ def _call_openrouter(model: str, prompt: str) -> str:
     return resp.json()["choices"][0]["message"]["content"]
 
 
-def _call_hf_ollama(model: str, prompt: str) -> str:
-    hf_url = os.environ.get("HF_SPACE_URL")
-    resp = requests.post(
-        f"{hf_url}/api/chat",
-        json={"model": model, "messages": [{"role": "user", "content": prompt}], "stream": False},
-        timeout=600,
-    )
-    resp.raise_for_status()
-    return resp.json()["message"]["content"]
-
-
 PROVIDERS = {
     "gemini": _call_gemini,
     "openrouter": _call_openrouter,
-    "hf_ollama": _call_hf_ollama,
 }
 
 
 def call_role(role: str, prompt: str) -> str:
     role_cfg = CONFIG["roles"][role]
     fn = PROVIDERS[role_cfg["provider"]]
-    return fn(role_cfg["model"], prompt)
+    result = fn(role_cfg["model"], prompt)
+    if role_cfg["provider"] == "openrouter":
+        time.sleep(3)  # 連続呼び出しでのレート制限回避
+    return result
