@@ -1,0 +1,112 @@
+プログラムの実行方法
+
+
+全体の実行サイクル
+
+
+ [事前準備] APIキーとHugging Faceの設定（初回のみ）
+    │
+    ▼
+ 【1. 起動】 python graph.py を実行（AIたちが自動議論＆数式検証）
+    │
+    ▼
+ 【2. 一時停止】 条件を満たすと自動ストップ（スナップショット出力）
+    │
+    ▼
+ 【3. レビュー】 pending_review/round_X.md を claude.ai に貼って指示をもらい
+                 pending_review/round_X_claude.md に保存
+    │
+    ▼
+ 【4. 再開】 python write_review_to_memory.py X
+             python resume.py X でループ再開！
+
+
+1. 事前準備（初回のみ）
+プログラムを動かす前に、
+.env
+ と 
+config.yaml
+ を確認・設定します。
+
+① 
+.env
+ ファイルにAPIキーを入力
+.env
+ を開いて、お使いのAPIキーを記入します。
+
+
+GOOGLE_API_KEY=AIzaSy...（Google AI Studioで取得）
+OPENROUTER_API_KEY=sk-or-v1-...（OpenRouterで取得）
+HF_SPACE_URL=https://username-my-research-ollama.hf.space（Hugging Face SpaceのURL）
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...（任意・通知用）
+
+② 
+config.yaml
+ で研究テーマを確認
+config.yaml
+ の先頭で、取り組みたい研究課題が設定されているか確認します。
+
+project:
+  id: "ancillary_stat_project"              # プロジェクトID（英数字）
+  topic: "補助統計量の存在条件についての検証"    # 研究課題テキスト
+
+2. コマンド1: 研究ループの起動
+ターミナル（コマンドプロンプト）を開き、フォルダーに移動して graph.py を実行します。
+
+cd C:\Users\user\.gemini\antigravity\scratch\research_loop
+python graph.py
+
+🤖 裏で自動実行されていること：
+hypothesis_node: Gemini 2.5 Pro が研究課題に対する提案・導出と、数式検証用の Python (SymPy) コードを作成します。
+verify_node: SymPy ライブラリが Python コードを実行し、「左辺 ＝ 右辺」が数学的に正しく成り立つか自動計算検証します。（コードがない・エラーの場合は要修正判定になります）
+critique_node: 批評AI（DeepSeek-R1 や GPT）が導出内容を批判的に検証します。
+third_opinion_node: 第三者AI（Llama 3.3）が独立した意見を提示します。
+
+3. ループの一時停止（Pause）が発生した場合
+以下のいずれかの状態になると、プログラムは自動で安全に一時停止します：
+
+❌ 数式検証エラー: SymPyでの計算で矛盾が起きた、または検証用コードが書かれなかった場合
+⚔️ 意見の食い違い: 批評モデル間で「妥当」「要修正」の判定が割れた場合
+⏱️ 規定ラウンド到達: 5ラウンド（config.yamlのrounds_before_pauseで設定）に達した場合
+ターミナルに次のように表示されます：
+
+[一時停止] 原因: 5ラウンド到達
+スナップショットを作成しました: pending_review/round_5.md
+
+4. 人間（Claude）によるレビュー作業
+一時停止したら、以下の手動ステップを行います（約2〜3分）：
+
+スナップショットを開く: 
+pending_review/round_5.md
+ （数字は停止したラウンド数）を開き、全文をコピーします。
+Claude に相談する: Webブラウザで claude.ai を開き、以下のように送信します。
+「以下の研究状況（スナップショット）をチェックして、問題点や次に向かうべき方向性・指示を提示してください。」 （コピーしたテキストを貼り付け）
+
+回答を保存する: Claude から返ってきたアドバイス全文をコピーします。
+pending_review フォルダー内に round_5_claude.md という新規ファイルを作成し、コピーした内容を貼り付けて保存します。
+※ファイル名は必ず round_ラウンド数_claude.md としてください。
+
+5. コマンド2: ログ保存と研究ループの再開
+Claudeの指示を保存したら、ターミナルで以下の 2 つのコマンドを順番に実行します（※数字部分は現在のラウンド数）：
+
+# ① Claudeのアドバイスを長期記憶ログ (memory/) に記録
+python write_review_to_memory.py 5
+
+# ② ClaudeのアドバイスをGeminiに渡して研究ループを再開
+python resume.py 5
+
+
+実行すると、Claudeからの指摘・方針を取り込んだ状態で Gemini 2.5 Pro が次の導出を作成し、再び自動検証ループが回り始めます！
+
+
+🔄 新しい研究テーマに変更したい場合
+別のテーマで新しく研究をスタートさせたい時は、
+config.yaml
+ の project セクションを書き換えるだけです。
+
+project:
+  id: "my_new_topic_01"                  # 💡 新しいIDに変更（セーブデータが新しくなります）
+  topic: "新しい研究テーマの具体的内容..."   # 💡 新しい研究課題
+
+保存後、再び python graph.py を実行すれば、新しいテーマで 1 ラウンド目からスタートします。
+
