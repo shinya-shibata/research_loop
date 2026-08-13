@@ -9,15 +9,15 @@ roles:
 
   critique_a:
     provider: openrouter
-    model: deepseek/deepseek-r1:free        # 思考過程を出すタイプ
+    model: nvidia/nemotron-3-super-120b-a12b:free
 
   critique_b:
     provider: openrouter
-    model: qwen/qwen-2.5-72b-instruct:free  # 別系統モデル
+    model: nvidia/nemotron-3.5-lightning:free
 
   third_opinion:
     provider: openrouter
-    model: openai/gpt-oss-120b:free         # さらに別系統
+    model: google/gemma-4-31b-it:free
 
 settings:
   rounds_before_pause: 5

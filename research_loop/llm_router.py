@@ -25,7 +25,8 @@ def _call_openrouter(model: str, prompt: str) -> str:
         json={"model": model, "messages": [{"role": "user", "content": prompt}]},
         timeout=300,
     )
-    resp.raise_for_status()
+    if resp.status_code != 200:
+        raise RuntimeError(f"OpenRouterエラー ({resp.status_code}): {resp.text}")
     return resp.json()["choices"][0]["message"]["content"]
 
 
