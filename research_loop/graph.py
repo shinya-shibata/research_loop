@@ -155,8 +155,12 @@ builder.add_conditional_edges("third_opinion", decision_router, {
 })
 builder.add_edge("pause", END)
 
+import sqlite3
+from langgraph.checkpoint.sqlite import SqliteSaver
+
 os.makedirs("checkpoints", exist_ok=True)
-checkpointer = SqliteSaver.from_conn_string("checkpoints/research.db")
+conn = sqlite3.connect("checkpoints/research.db", check_same_thread=False)
+checkpointer = SqliteSaver(conn)
 graph = builder.compile(checkpointer=checkpointer)
 
 if __name__ == "__main__":

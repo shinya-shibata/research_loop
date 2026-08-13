@@ -2,20 +2,20 @@ import os
 import time
 import yaml
 import requests
-import google.generativeai as genai
+from google import genai
 from dotenv import load_dotenv
 
 load_dotenv()
 
-with open("config.yaml") as f:
+with open("config.yaml", encoding="utf-8") as f:
     CONFIG = yaml.safe_load(f)
 
-genai.configure(api_key=os.environ.get("GOOGLE_API_KEY"))
+_gemini_client = genai.Client(api_key=os.environ.get("GOOGLE_API_KEY"))
 
 
 def _call_gemini(model: str, prompt: str) -> str:
-    m = genai.GenerativeModel(model)
-    return m.generate_content(prompt).text
+    interaction = _gemini_client.interactions.create(model=model, input=prompt)
+    return interaction.output_text
 
 
 def _call_openrouter(model: str, prompt: str) -> str:

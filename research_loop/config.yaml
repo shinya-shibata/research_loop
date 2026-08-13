@@ -5,7 +5,7 @@ project:
 roles:
   hypothesis:
     provider: gemini
-    model: gemini-2.5-pro
+    model: gemini-3.5-flash
 
   critique_a:
     provider: openrouter
