@@ -26,17 +26,17 @@ class ResearchState(TypedDict):
 
 def hypothesis_node(state):
     prompt = f"""
-あなたは統計学・漸近理論の共同研究者です。
-研究課題: {state['topic']}
+You are a research collaborator in mathematical statistics and asymptotic theory.
+Research topic: {state['topic']}
 
-これまでの経過:
-批評A: {state.get('critique_a', '（初回）')}
-批評B: {state.get('critique_b', '')}
-第三の意見: {state.get('third_opinion', '')}
-人間（Claude）のレビュー: {state.get('human_feedback', '')}
+Progress so far:
+Critique A: {state.get('critique_a', '(Initial round)')}
+Critique B: {state.get('critique_b', '')}
+Third opinion: {state.get('third_opinion', '')}
+Human (Claude) review: {state.get('human_feedback', '')}
 
-上記すべてを踏まえ、次の一手となる具体的な導出・命題を提示してください。
-数式は必ずSymPyで再現可能な形（変数 lhs / rhs を定義するPythonコード）でも併記してください。
+Based on all of the above, present the next concrete proposition and mathematical derivation.
+You MUST also include runnable Python code defining variables `lhs` and `rhs` so that mathematical formulas can be verified with SymPy.
 """
     text = call_role("hypothesis", prompt)
     return {"hypothesis": text, "round_num": state["round_num"] + 1}
@@ -44,18 +44,18 @@ def hypothesis_node(state):
 
 def _critique_prompt(state):
     return f"""
-以下の導出を批判的にレビューしてください。特に:
-- 検証結果と矛盾する主張がないか
-- 暗黙の仮定
-- 反例になりそうな極端なケース
+Critically review the following derivation, specifically checking for:
+- Any claims that contradict the verification results
+- Implicit assumptions
+- Extreme edge cases that could serve as counterexamples
 
-導出:
+Derivation:
 {state['hypothesis']}
 
-検証結果:
+Verification result:
 {state['verify_result']}
 
-最後の行に「妥当」または「要修正」とだけ書いてください。
+On the final line, write only 'VALID' or 'NEEDS_REVISION'.
 """
 
 
@@ -63,18 +63,23 @@ def critique_node(state):
     prompt = _critique_prompt(state)
     critique_a = call_role("critique_a", prompt)
     critique_b = call_role("critique_b", prompt)
-    disagreement = ("要修正" in critique_a[-30:]) != ("要修正" in critique_b[-30:])
+
+    def is_revision_needed(c: str) -> bool:
+        tail = c[-50:].upper()
+        return "NEEDS_REVISION" in tail or "REVISED" in tail
+
+    disagreement = is_revision_needed(critique_a) != is_revision_needed(critique_b)
     return {"critique_a": critique_a, "critique_b": critique_b, "critique_disagreement": disagreement}
 
 
 def third_opinion_node(state):
     prompt = f"""
-以下の導出について、他のレビュアーの意見は見せずに、独立した第三者として妥当性を評価してください。
+Evaluate the validity of the following derivation as an independent third party, without seeing any other reviewers' opinions.
 
-導出:
+Derivation:
 {state['hypothesis']}
 
-検証結果:
+Verification result:
 {state['verify_result']}
 """
     text = call_role("third_opinion", prompt)
@@ -96,45 +101,45 @@ def pause_node(state):
     os.makedirs("pending_review", exist_ok=True)
     snapshot_path = f"pending_review/round_{state['round_num']}.md"
     with open(snapshot_path, "w", encoding="utf-8") as f:
-        f.write(f"""# レビュー依頼 (round {state['round_num']})
+        f.write(f"""# Review Request (Round {state['round_num']})
 
-## 研究課題
+## Research Topic
 {state['topic']}
 
-## 最新の仮説・導出
+## Latest Hypothesis / Derivation
 {state['hypothesis']}
 
-## 検証結果
+## Verification Result
 {state['verify_result']}  (verify_ok={state['verify_ok']})
 
-## 批評A
+## Critique A
 {state['critique_a']}
 
-## 批評B
+## Critique B
 {state['critique_b']}
 
-## 意見の食い違い: {state['critique_disagreement']}
+## Disagreement: {state['critique_disagreement']}
 
-## 第三の意見
+## Third Opinion
 {state['third_opinion']}
 """)
 
     reason = (
-        "検証で矛盾検出" if not state["verify_ok"]
-        else "批評モデル間の意見の食い違い" if state["critique_disagreement"]
-        else f"{state['round_num']}ラウンド到達"
+        "Contradiction detected in verification" if not state["verify_ok"]
+        else "Disagreement between critique models" if state["critique_disagreement"]
+        else f"Reached {state['round_num']} rounds"
     )
     
     webhook_url = os.environ.get("SLACK_WEBHOOK_URL")
     if webhook_url and webhook_url.startswith("http"):
         requests.post(
             webhook_url,
-            json={"text": f"🔬 研究ループ一時停止（{reason}）\nスナップショット: {snapshot_path}\n"
-                           f"claude.aiでレビュー後、pending_review/round_{state['round_num']}_claude.md に保存し、"
-                           f"`python resume.py {state['round_num']}` を実行してください。"},
+            json={"text": f"🔬 Research loop paused ({reason})\nSnapshot: {snapshot_path}\n"
+                           f"After reviewing on claude.ai, save to pending_review/round_{state['round_num']}_claude.md and "
+                           f"run `python resume.py {state['round_num']}`."},
         )
-    print(f"\n[一時停止] 原因: {reason}")
-    print(f"スナップショットを作成しました: {snapshot_path}\n")
+    print(f"\n[Paused] Reason: {reason}")
+    print(f"Snapshot created: {snapshot_path}\n")
     return {"paused": True}
 
 
@@ -179,5 +184,5 @@ if __name__ == "__main__":
         "human_feedback": None,
         "paused": False,
     }
-    print("研究ループを開始します...")
+    print("Starting research loop...")
     graph.invoke(initial_state, config)

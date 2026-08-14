@@ -1,6 +1,6 @@
 project:
   id: "ancillary_stat_project"
-  topic: "補助統計量の存在条件についての検証"
+  topic: "Verification of existence conditions for ancillary statistics"
 
 roles:
   hypothesis:
