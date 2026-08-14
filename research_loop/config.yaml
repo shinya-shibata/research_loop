@@ -1,6 +1,6 @@
 project:
-  id: "ancillary_stat_project"
-  topic: "Verification of existence conditions for ancillary statistics"
+  id: "yang_mills_mass_gap"
+  topic: "Establishment of 4D Quantum Yang-Mills Theory and Proof of the Mass Gap (Delta > 0)."
 
 roles:
   hypothesis:
