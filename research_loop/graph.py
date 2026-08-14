@@ -38,7 +38,7 @@ Human (Claude) review: {state.get('human_feedback', '')}
 Based on all of the above, present the next concrete proposition and mathematical derivation.
 You MUST also include runnable Python code defining variables `lhs` and `rhs` so that mathematical formulas can be verified with SymPy.
 """
-    text = call_role("hypothesis", prompt)
+    text = call_role("hypothesis", prompt) or ""
     return {"hypothesis": text, "round_num": state["round_num"] + 1}
 
 
@@ -61,11 +61,13 @@ On the final line, write only 'VALID' or 'NEEDS_REVISION'.
 
 def critique_node(state):
     prompt = _critique_prompt(state)
-    critique_a = call_role("critique_a", prompt)
-    critique_b = call_role("critique_b", prompt)
+    critique_a = call_role("critique_a", prompt) or ""
+    critique_b = call_role("critique_b", prompt) or ""
 
-    def is_revision_needed(c: str) -> bool:
-        tail = c[-50:].upper()
+    def is_revision_needed(c: Optional[str]) -> bool:
+        if not c:
+            return False
+        tail = str(c)[-50:].upper()
         return "NEEDS_REVISION" in tail or "REVISED" in tail
 
     disagreement = is_revision_needed(critique_a) != is_revision_needed(critique_b)
@@ -82,7 +84,7 @@ Derivation:
 Verification result:
 {state['verify_result']}
 """
-    text = call_role("third_opinion", prompt)
+    text = call_role("third_opinion", prompt) or ""
     return {"third_opinion": text}
 
 

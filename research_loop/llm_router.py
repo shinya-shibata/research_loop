@@ -15,7 +15,18 @@ _gemini_client = genai.Client(api_key=os.environ.get("GOOGLE_API_KEY"))
 
 def _call_gemini(model: str, prompt: str) -> str:
     interaction = _gemini_client.interactions.create(model=model, input=prompt)
-    return interaction.output_text
+    return interaction.output_text or ""
+
+
+def _extract_content(data: dict) -> str:
+    choices = data.get("choices", [])
+    if not choices:
+        return ""
+    msg = choices[0].get("message", {})
+    content = msg.get("content")
+    if not content:
+        content = msg.get("reasoning") or msg.get("reasoning_content") or ""
+    return content or ""
 
 
 def _call_openrouter(model: str, prompt: str) -> str:
@@ -28,7 +39,7 @@ def _call_openrouter(model: str, prompt: str) -> str:
         )
         if resp.status_code != 200:
             raise RuntimeError(f"OpenRouter error ({resp.status_code}): {resp.text}")
-        return resp.json()["choices"][0]["message"]["content"]
+        return _extract_content(resp.json())
     except Exception as e:
         if model == "google/gemma-4-31b-it:free":
             fallback_model = "nvidia/nemotron-3-ultra-550b-a55b:free"
@@ -41,7 +52,7 @@ def _call_openrouter(model: str, prompt: str) -> str:
             )
             if resp.status_code != 200:
                 raise RuntimeError(f"OpenRouter error (fallback also failed) ({resp.status_code}): {resp.text}")
-            return resp.json()["choices"][0]["message"]["content"]
+            return _extract_content(resp.json())
         else:
             raise e
 
